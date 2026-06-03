@@ -36,6 +36,7 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-actuator")
 	developmentOnly("org.springframework.boot:spring-boot-devtools")
 	implementation("org.springframework.boot:spring-boot-starter-cache")
+	implementation("org.springframework.cloud:spring-cloud-starter-vault-config")
 	implementation("com.github.ben-manes.caffeine:caffeine")
 	implementation("com.bucket4j:bucket4j-core:${property("bucket4jVersion")}")
 	implementation("io.github.resilience4j:resilience4j-circuitbreaker")

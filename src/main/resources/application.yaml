@@ -1,0 +1,25 @@
+spring:
+    application:
+        name: ai
+    cache:
+        type: caffeine
+    config:
+        import: vault://
+
+    # Vault configuration
+    cloud:
+        vault:
+            host: localhost
+            port: 8200
+            scheme: http
+            authentication: token
+            token: ${VAULT_TOKEN}
+            kv:
+                enabled: true
+
+springdoc:
+    api-docs:
+        path: /api-docs
+    swagger-ui:
+        url: /swagger-ui
+        enabled: true
