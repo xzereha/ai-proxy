@@ -1,0 +1,15 @@
+spring:
+    application:
+        name: ai
+    cache:
+        type: caffeine
+        expire-after-write-minutes: 10
+        maximum-size: 100
+    config:
+        import: ""
+    cloud:
+        vault:
+            enabled: false
+
+openai:
+    key: test-key

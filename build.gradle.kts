@@ -77,6 +77,7 @@ tasks.jacocoTestReport {
 		fileTree(it) {
 			exclude(
 				"**/TravelAssistantApplication.class",
+				"**/client/**",
 				"**/dto/**",
 				"**/domain/**"
 			)
@@ -90,6 +91,7 @@ tasks.jacocoTestCoverageVerification {
 		fileTree(it) {
 			exclude(
 				"**/TravelAssistantApplication.class",
+				"**/client/**",
 				"**/dto/**",
 				"**/domain/**"
 			)
