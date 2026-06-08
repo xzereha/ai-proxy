@@ -76,7 +76,6 @@ tasks.jacocoTestReport {
 	classDirectories.setFrom(files(classDirectories.files.map {
 		fileTree(it) {
 			exclude(
-				"**/TravelAssistantApplication.class",
 				"**/client/**",
 				"**/dto/**",
 				"**/domain/**"
@@ -90,7 +89,6 @@ tasks.jacocoTestCoverageVerification {
 	classDirectories.setFrom(files(classDirectories.files.map {
 		fileTree(it) {
 			exclude(
-				"**/TravelAssistantApplication.class",
 				"**/client/**",
 				"**/dto/**",
 				"**/domain/**"
