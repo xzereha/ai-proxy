@@ -22,6 +22,10 @@ spring:
 openai:
     connect-timeout-ms: 2000
     response-timeout-seconds: 8
+    retry:
+        max-attempts: 3
+        initial-delay-ms: 1000
+        max-delay-ms: 8000
 
 springdoc:
     api-docs:

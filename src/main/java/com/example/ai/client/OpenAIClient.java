@@ -14,22 +14,46 @@ import com.example.ai.exception.ModelRefusalException;
 import com.example.ai.exception.ModelResponseParseException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 import reactor.core.publisher.Mono;
+import reactor.util.retry.Retry;
 
+import java.time.Duration;
 import java.util.List;
 
+@Slf4j
 @Component
-@AllArgsConstructor
 public class OpenAIClient {
+    private static final String BASE_URL = "https://api.openai.com/v1/";
+
     private final OpenAiConfig openAiConfig;
     private final WebClient webClient;
     private final ObjectMapper objectMapper;
-    private static final String BASE_URL = "https://api.openai.com/v1/";
+    private final int retryMaxAttempts;
+    private final Duration retryInitialDelay;
+    private final Duration retryMaxDelay;
+
+    public OpenAIClient(
+            OpenAiConfig openAiConfig,
+            WebClient webClient,
+            ObjectMapper objectMapper,
+            @Value("${openai.retry.max-attempts}") int retryMaxAttempts,
+            @Value("${openai.retry.initial-delay-ms}") long retryInitialDelayMs,
+            @Value("${openai.retry.max-delay-ms}") long retryMaxDelayMs) {
+        this.openAiConfig = openAiConfig;
+        this.webClient = webClient;
+        this.objectMapper = objectMapper;
+        this.retryMaxAttempts = retryMaxAttempts;
+        this.retryInitialDelay = Duration.ofMillis(retryInitialDelayMs);
+        this.retryMaxDelay = Duration.ofMillis(retryMaxDelayMs);
+    }
 
     public Mono<ModelsResponseDTO> getAvailableModels() {
         return webClient
@@ -37,7 +61,8 @@ public class OpenAIClient {
                 .uri(BASE_URL + "models")
                 .header("Authorization", "Bearer " + openAiConfig.getApiKey())
                 .retrieve()
-                .bodyToMono(ModelsResponseDTO.class);
+                .bodyToMono(ModelsResponseDTO.class)
+                .retryWhen(buildRetry());
     }
 
     public Mono<MessageResponseDTO> getResponse(String model, String prompt) {
@@ -83,7 +108,21 @@ public class OpenAIClient {
                             } catch (Exception e) {
                                 throw new ModelResponseParseException(text, e);
                             }
-                        });
+                        })
+                .retryWhen(buildRetry());
+    }
+
+    private Retry buildRetry() {
+        return Retry.backoff(retryMaxAttempts, retryInitialDelay)
+                .maxBackoff(retryMaxDelay)
+                .filter(throwable -> {
+                    if (throwable instanceof WebClientResponseException e
+                            && e.getStatusCode() == HttpStatus.TOO_MANY_REQUESTS) {
+                        log.warn("Rate limited (429), retrying...");
+                        return true;
+                    }
+                    return false;
+                });
     }
 
     private ChatRequestDTO buildRequest(String model, String prompt) {
