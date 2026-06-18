@@ -61,20 +61,22 @@ public class OpenAIClient {
                                             yield response.extractText();
                                         }
                                         case "failed" ->
-                                            throw new ModelFailedException(response.status());
+                                                throw new ModelFailedException(response.status());
                                         case "in_progress" ->
-                                            throw new IllegalStateException(
-                                                    "Unexpected in_progress status in non-streaming"
-                                                        + " response");
+                                                throw new IllegalStateException(
+                                                        "Unexpected in_progress status in"
+                                                                + " non-streaming response");
                                         case "cancelled" ->
-                                            throw new IllegalStateException(
-                                                    "Unexpected cancelled status in non-streaming"
-                                                        + " response");
+                                                throw new IllegalStateException(
+                                                        "Unexpected cancelled status in"
+                                                                + " non-streaming response");
                                         case "incomplete" ->
-                                            throw new ModelIncompleteException(response.status());
+                                                throw new ModelIncompleteException(
+                                                        response.status());
                                         default ->
-                                            throw new IllegalStateException(
-                                                    "Unknown response status: " + response.status());
+                                                throw new IllegalStateException(
+                                                        "Unknown response status: "
+                                                                + response.status());
                                     };
                             try {
                                 return objectMapper.readValue(text, MessageResponseDTO.class);
@@ -99,6 +101,7 @@ public class OpenAIClient {
                                                     Keep your responses short and to the point.
                                                     Your answers should be based on the user's question and not your own opinions or beliefs.
                                                     Your responses should be written in a way that is easy to understand for the user.
+                                                    Do NOT include markdown formatting (like ```json), code fences, or conversational text. Return ONLY the raw JSON object.
                                                     Your response should be formatted as a JSON object following the specified schema.
                                                 """)
                                         .build(),
