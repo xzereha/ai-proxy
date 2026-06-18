@@ -26,6 +26,9 @@ openai:
         max-attempts: 3
         initial-delay-ms: 1000
         max-delay-ms: 8000
+    response:
+        fallback-message: "I'm sorry, I couldn't process that response."
+        max-length: 4000
 
 springdoc:
     api-docs:

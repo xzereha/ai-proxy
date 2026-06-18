@@ -19,3 +19,6 @@ openai:
         max-attempts: 3
         initial-delay-ms: 1000
         max-delay-ms: 8000
+    response:
+        fallback-message: "Fallback response for testing."
+        max-length: 4000

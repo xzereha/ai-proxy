@@ -11,8 +11,9 @@ import com.example.ai.dto.v1.MessageResponseDTO;
 import com.example.ai.exception.ModelFailedException;
 import com.example.ai.exception.ModelIncompleteException;
 import com.example.ai.exception.ModelRefusalException;
-import com.example.ai.exception.ModelResponseParseException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import jakarta.validation.Validator;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -36,23 +37,32 @@ public class OpenAIClient {
     private final OpenAiConfig openAiConfig;
     private final WebClient webClient;
     private final ObjectMapper objectMapper;
+    private final Validator validator;
     private final int retryMaxAttempts;
     private final Duration retryInitialDelay;
     private final Duration retryMaxDelay;
+    private final String fallbackMessage;
+    private final int maxResponseLength;
 
     public OpenAIClient(
             OpenAiConfig openAiConfig,
             WebClient webClient,
             ObjectMapper objectMapper,
+            Validator validator,
             @Value("${openai.retry.max-attempts}") int retryMaxAttempts,
             @Value("${openai.retry.initial-delay-ms}") long retryInitialDelayMs,
-            @Value("${openai.retry.max-delay-ms}") long retryMaxDelayMs) {
+            @Value("${openai.retry.max-delay-ms}") long retryMaxDelayMs,
+            @Value("${openai.response.fallback-message}") String fallbackMessage,
+            @Value("${openai.response.max-length}") int maxResponseLength) {
         this.openAiConfig = openAiConfig;
         this.webClient = webClient;
         this.objectMapper = objectMapper;
+        this.validator = validator;
         this.retryMaxAttempts = retryMaxAttempts;
         this.retryInitialDelay = Duration.ofMillis(retryInitialDelayMs);
         this.retryMaxDelay = Duration.ofMillis(retryMaxDelayMs);
+        this.fallbackMessage = fallbackMessage;
+        this.maxResponseLength = maxResponseLength;
     }
 
     public Mono<ModelsResponseDTO> getAvailableModels() {
@@ -103,13 +113,32 @@ public class OpenAIClient {
                                                         "Unknown response status: "
                                                                 + response.status());
                                     };
-                            try {
-                                return objectMapper.readValue(text, MessageResponseDTO.class);
-                            } catch (Exception e) {
-                                throw new ModelResponseParseException(text, e);
-                            }
+                            return parseAndValidate(text);
                         })
                 .retryWhen(buildRetry());
+    }
+
+    private MessageResponseDTO parseAndValidate(String text) {
+        MessageResponseDTO dto;
+        try {
+            dto = objectMapper.readValue(text, MessageResponseDTO.class);
+        } catch (Exception e) {
+            log.warn("Failed to parse model response, using fallback: {}", e.getMessage());
+            return new MessageResponseDTO(fallbackMessage);
+        }
+        var violations = validator.validate(dto);
+        if (!violations.isEmpty()) {
+            log.warn("Model response failed validation ({}), using fallback", violations);
+            return new MessageResponseDTO(fallbackMessage);
+        }
+        if (dto.response() != null && dto.response().length() > maxResponseLength) {
+            log.warn(
+                    "Model response exceeds max length ({} > {}), using fallback",
+                    dto.response().length(),
+                    maxResponseLength);
+            return new MessageResponseDTO(fallbackMessage);
+        }
+        return dto;
     }
 
     private Retry buildRetry() {
