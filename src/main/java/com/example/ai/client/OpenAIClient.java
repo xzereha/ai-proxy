@@ -32,8 +32,7 @@ import java.util.List;
 @Slf4j
 @Component
 public class OpenAIClient {
-    private static final String BASE_URL = "https://api.openai.com/v1/";
-
+    private final String baseUrl;
     private final OpenAiConfig openAiConfig;
     private final WebClient webClient;
     private final ObjectMapper objectMapper;
@@ -53,7 +52,8 @@ public class OpenAIClient {
             @Value("${openai.retry.initial-delay-ms}") long retryInitialDelayMs,
             @Value("${openai.retry.max-delay-ms}") long retryMaxDelayMs,
             @Value("${openai.response.fallback-message}") String fallbackMessage,
-            @Value("${openai.response.max-length}") int maxResponseLength) {
+            @Value("${openai.response.max-length}") int maxResponseLength,
+            @Value("${openai.base-url}") String baseUrl) {
         this.openAiConfig = openAiConfig;
         this.webClient = webClient;
         this.objectMapper = objectMapper;
@@ -63,12 +63,13 @@ public class OpenAIClient {
         this.retryMaxDelay = Duration.ofMillis(retryMaxDelayMs);
         this.fallbackMessage = fallbackMessage;
         this.maxResponseLength = maxResponseLength;
+        this.baseUrl = baseUrl;
     }
 
     public Mono<ModelsResponseDTO> getAvailableModels() {
         return webClient
                 .get()
-                .uri(BASE_URL + "models")
+                .uri(baseUrl + "models")
                 .header("Authorization", "Bearer " + openAiConfig.getApiKey())
                 .retrieve()
                 .bodyToMono(ModelsResponseDTO.class)
@@ -79,7 +80,7 @@ public class OpenAIClient {
         var body = buildRequest(model, prompt);
         return webClient
                 .post()
-                .uri(BASE_URL + "responses")
+                .uri(baseUrl + "responses")
                 .header("Authorization", "Bearer " + openAiConfig.getApiKey())
                 .bodyValue(body)
                 .retrieve()
@@ -118,7 +119,7 @@ public class OpenAIClient {
                 .retryWhen(buildRetry());
     }
 
-    private MessageResponseDTO parseAndValidate(String text) {
+    MessageResponseDTO parseAndValidate(String text) {
         MessageResponseDTO dto;
         try {
             dto = objectMapper.readValue(text, MessageResponseDTO.class);
@@ -141,7 +142,7 @@ public class OpenAIClient {
         return dto;
     }
 
-    private Retry buildRetry() {
+    Retry buildRetry() {
         return Retry.backoff(retryMaxAttempts, retryInitialDelay)
                 .maxBackoff(retryMaxDelay)
                 .filter(throwable -> {

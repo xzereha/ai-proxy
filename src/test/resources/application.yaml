@@ -13,6 +13,7 @@ spring:
 
 openai:
     key: test-key
+    base-url: "https://api.openai.com/v1/"
     connect-timeout-ms: 2000
     response-timeout-seconds: 8
     retry:
