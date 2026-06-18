@@ -13,3 +13,5 @@ spring:
 
 openai:
     key: test-key
+    connect-timeout-ms: 2000
+    response-timeout-seconds: 8
