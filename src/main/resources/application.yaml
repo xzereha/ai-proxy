@@ -11,7 +11,7 @@ spring:
     # Vault configuration
     cloud:
         vault:
-            host: localhost
+            host: ${VAULT_HOST:localhost}
             port: 8200
             scheme: http
             authentication: token
