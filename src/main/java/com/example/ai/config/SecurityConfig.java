@@ -12,19 +12,9 @@ public class SecurityConfig {
 
     @Bean
     public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http) {
-        return http.authorizeExchange(
-                        exchanges ->
-                                exchanges
-                                        .pathMatchers(
-                                                "/api/v1/models",
-                                                "api/v1/chat",
-                                                "/swagger-ui",
-                                                "/swagger-ui/**",
-                                                "/api-docs/**",
-                                                "/actuator/health")
-                                        .permitAll()
-                                        .anyExchange()
-                                        .authenticated())
+        return http
+                .authorizeExchange(exchanges ->
+                        exchanges.anyExchange().permitAll())
                 .csrf(ServerHttpSecurity.CsrfSpec::disable)
                 .formLogin(ServerHttpSecurity.FormLoginSpec::disable)
                 .httpBasic(ServerHttpSecurity.HttpBasicSpec::disable)
